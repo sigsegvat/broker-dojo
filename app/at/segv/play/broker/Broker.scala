@@ -4,6 +4,8 @@ import akka.actor.{ActorRef, Props, Actor}
 import akka.actor.Actor.Receive
 import akka.event.Logging
 import at.segv.play.broker.api._
+import collection.JavaConversions._
+
 
 
 class Exchange extends Actor {
@@ -17,17 +19,36 @@ class Exchange extends Actor {
   var currentCall: Set[Client] = Set()
   var currentPut: Set[Client] = Set()
 
+  val scoreMap  = scala.collection.mutable.Map[Client,Int]()
 
-  override def receive(): Receive = {
+  override def receive: Receive = {
 
     case 'tickle => {
       nr += 1
-      if (currentCall.size < currentPut.size) price += 1
-      val tick = Tick(nr, 0, currentCall.map(x => x.name), currentPut.map(x => x.name))
+      if (currentCall.size > currentPut.size) {
+        price += -1
+        for(winner <- currentPut) scoreMap.put(winner,scoreMap.getOrElse(winner,0)+1)
+      }
+      else if (currentCall.size < currentPut.size){
+        price += 1
+        for(winner <- currentCall) scoreMap.put(winner,scoreMap.getOrElse(winner,0)+1)
+      }
+
+
+
+      val callArray = currentCall.toArray.map( x => x.name)
+
+      val putArray = currentPut.toArray.map( x => x.name)
+
+      val tick = Tick(nr, price, callArray, putArray)
+
       for (child <- context.children) child ! tick
+
       currentCall = Set()
       currentPut = Set()
-      log.info("sent tick " + tick)
+
+      log.info(tick.toString)
+      log.info(scoreMap.toString())
     }
 
     case r: Register => {
@@ -35,8 +56,15 @@ class Exchange extends Actor {
       log.info("registered " + r)
     }
 
-    case Action('call, client) => currentCall = currentCall + client
-    case Action('put, client) => currentCall = currentCall + client
+    case Action(Order('call), client) => {
+      currentCall = currentCall + client
+      log.info("received call from "+client)
+    }
+
+    case Action(Order('put), client) => {
+      currentPut = currentPut + client
+      log.info("received put from "+client)
+    }
 
 
 
@@ -55,24 +83,22 @@ class Broker(client: Client) extends Actor {
     log.info("started: "+client)
   }
 
+  def processTick(t: Tick): Unit = {
+    if (sender equals context.parent) {
+      client.actor ! t
+      context.become(waitAction)
+    }
+  }
+
   def waitTick: Receive = {
     case t: Tick =>  processTick(t)
 
   }
 
-  def processTick(t: Tick): Unit = {
-    if (sender equals context.parent) {
-      client.actor ! t
-      context.become(waitAction)
-      log.info("sent tick " + t)
-    }
-  }
-
   def waitAction: Receive = {
-    case s: Symbol => {
-      context.parent ! Action(s, client)
+    case o: Order => {
+      context.parent ! Action(o, client)
       context.become(waitTick)
-      log.info("wait for tick")
     }
     case t: Tick =>  processTick(t)
   }
@@ -85,5 +111,5 @@ object Broker {
 case class Client(actor: ActorRef, name: String)
 
 
-case class Action(action: Symbol, client: Client)
+case class Action(action: Order, client: Client)
 

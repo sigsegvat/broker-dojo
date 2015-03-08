@@ -8,9 +8,10 @@ lazy val commonSettings = Seq(
 )
 
 
+
 lazy val api = (project in file("broker-api")).settings(commonSettings: _*)
 
-lazy val root = (project in file(".")).enablePlugins(PlayScala).settings(commonSettings: _*).dependsOn(api)
+lazy val root = (project in file(".")).enablePlugins(PlayScala).settings(commonSettings: _*).dependsOn(api).enablePlugins(SbtWeb)
 
 
 
@@ -22,12 +23,10 @@ libraryDependencies ++= Seq(
   ws
 )
 
-libraryDependencies +=   "com.typesafe.akka" %% "akka-actor" % "2.3.9"
-
-libraryDependencies +=   "com.typesafe.akka" %% "akka-remote" % "2.3.9"
-
-libraryDependencies += "com.typesafe.akka" %% "akka-slf4j" % "2.3.9"
-
-libraryDependencies += "ch.qos.logback" % "logback-classic" % "1.0.13"
-
-
+libraryDependencies   ++= Seq( "com.typesafe.akka" %% "akka-actor" % "2.3.9" ,
+  "com.typesafe.akka" %% "akka-remote" % "2.3.9",
+  "com.typesafe.akka" %% "akka-slf4j" % "2.3.9",
+  "ch.qos.logback" % "logback-classic" % "1.0.13",
+  "org.webjars" % "bootstrap" % "3.3.2-2",
+  "org.webjars" % "backbonejs" % "1.1.2-2"
+)

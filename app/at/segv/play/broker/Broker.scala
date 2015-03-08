@@ -44,6 +44,8 @@ class Exchange extends Actor {
 
       for (child <- context.children) child ! tick
 
+      context.system.eventStream.publish(tick)
+
       currentCall = Set()
       currentPut = Set()
 

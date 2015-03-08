@@ -17,21 +17,22 @@ class QuotesWsActor(out: ActorRef) extends Actor {
   }
 
   def receive = {
-    case s: Scores =>
-      Logger.info(s.toString)
-      val t = s.tick
-      val tickJson: JsObject = Json.obj(
-        "nr" -> t.nr,
-        "price" -> t.price,
-        "put" -> t.put,
-        "call" -> t.call
-      )
+    case Scores(tick,scores) =>
+      if(tick.nr % 5 == 0) {
+        val tickJson: JsObject = Json.obj(
+          "nr" -> tick.nr,
+          "price" -> tick.price,
+          "put" -> tick.put,
+          "call" -> tick.call
+        )
 
-      val result = Json.obj(
-        "scores" -> s.scores.map {case (client:Client, value:Int) => (client.name, value)},
-        "tick" -> tickJson
-      )
+        val result = Json.obj(
+          "scores" -> scores.map {case (client:Client, value:Int) => (client.name, value)},
+          "tick" -> tickJson
+        )
 
-      out ! result
+        out ! result
+      }
+
   }
 }

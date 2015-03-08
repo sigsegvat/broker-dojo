@@ -49,13 +49,17 @@ $(document).ready(function() {
                                 model: scores
                                 });
 
+
+    var numberOfDatasets=40;
     var dataChart = [];
-    for(var i = 0; i<20; i++){
+    var dataLabels = [];
+    for(var i = 0; i<numberOfDatasets; i++){
         dataChart[i]=1000000;
+        dataLabels[i]=-numberOfDatasets+i;
     }
 
     var data = {
-        labels: dataChart,
+        labels: dataLabels,
         datasets: [
                 {
                      label: "WHX",
@@ -72,7 +76,7 @@ $(document).ready(function() {
     var ctx = document.getElementById("quotes").getContext("2d");
     var quotes = new Chart(ctx).Line(data, {
                                                bezierCurve: false,
-                                               animationSteps: 10
+                                               animation: false
                                            });
 
     var dateSocket = new WebSocket("ws://localhost:9000/ws/quotes");
@@ -80,7 +84,7 @@ $(document).ready(function() {
     var receiveEvent = function(event) {
         var data = JSON.parse(event.data);
         quotes.addData([data.tick.price], data.tick.nr);
-        if(quotes.datasets[0].points.length > 100){
+        if(quotes.datasets[0].points.length > numberOfDatasets){
             quotes.removeData()
         }
         for (var broker in data.scores) {

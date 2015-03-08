@@ -28,10 +28,12 @@ class Exchange extends Actor {
       if (currentCall.size > currentPut.size) {
         price += -1
         for(winner <- currentPut) scoreMap.put(winner,scoreMap.getOrElse(winner,0)+1)
+        for(looser <- currentCall) scoreMap.put(looser,scoreMap.getOrElse(looser,0))
       }
       else if (currentCall.size < currentPut.size){
         price += 1
         for(winner <- currentCall) scoreMap.put(winner,scoreMap.getOrElse(winner,0)+1)
+        for(looser <- currentPut) scoreMap.put(looser,scoreMap.getOrElse(looser,0))
       }
 
       val callArray = currentCall.toArray.map( x => x.name)
@@ -45,6 +47,8 @@ class Exchange extends Actor {
 
       currentCall = Set()
       currentPut = Set()
+
+      log.info(tick.toString)
 
     }
 
@@ -77,7 +81,6 @@ class Broker(client: Client) extends Actor {
   override def receive = waitAction
 
   override def preStart() = {
-    log.info("registered client" + client)
     context.system.eventStream.subscribe(self, classOf[Tick])
   }
 
@@ -87,8 +90,12 @@ class Broker(client: Client) extends Actor {
   }
 
   def waitTick: Receive = {
-    case t: Tick =>  processTick(t)
-
+    case t: Tick =>  {
+      processTick(t)
+    }
+    case _ => {
+      log.info("invalid message from "+client);
+    }
   }
 
   def waitAction: Receive = {

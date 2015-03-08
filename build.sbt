@@ -28,5 +28,7 @@ libraryDependencies   ++= Seq( "com.typesafe.akka" %% "akka-actor" % "2.3.9" ,
   "com.typesafe.akka" %% "akka-slf4j" % "2.3.9",
   "ch.qos.logback" % "logback-classic" % "1.0.13",
   "org.webjars" % "bootstrap" % "3.3.2-2",
-  "org.webjars" % "backbonejs" % "1.1.2-2"
+  "org.webjars" % "backbonejs" % "1.1.2-2",
+  "org.webjars" % "chartjs" % "1.0.1" ,
+  "org.webjars" %% "webjars-play" % "2.3.0-2"
 )

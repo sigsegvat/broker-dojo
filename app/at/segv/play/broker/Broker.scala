@@ -34,23 +34,18 @@ class Exchange extends Actor {
         for(winner <- currentCall) scoreMap.put(winner,scoreMap.getOrElse(winner,0)+1)
       }
 
-
-
       val callArray = currentCall.toArray.map( x => x.name)
-
       val putArray = currentPut.toArray.map( x => x.name)
 
       val tick = Tick(nr, price, callArray, putArray)
 
-      for (child <- context.children) child ! tick
-
       context.system.eventStream.publish(tick)
+
+      context.system.eventStream.publish(Scores(tick,scoreMap.toMap))
 
       currentCall = Set()
       currentPut = Set()
 
-      log.info(tick.toString)
-      log.info(scoreMap.toString())
     }
 
     case r: Register => {
@@ -82,14 +77,13 @@ class Broker(client: Client) extends Actor {
   override def receive = waitAction
 
   override def preStart() = {
-    log.info("started: "+client)
+    log.info("registered client" + client)
+    context.system.eventStream.subscribe(self, classOf[Tick])
   }
 
   def processTick(t: Tick): Unit = {
-    if (sender equals context.parent) {
       client.actor ! t
       context.become(waitAction)
-    }
   }
 
   def waitTick: Receive = {
@@ -112,6 +106,6 @@ object Broker {
 
 case class Client(actor: ActorRef, name: String)
 
-
 case class Action(action: Order, client: Client)
 
+case class Scores(tick: Tick, scores: Map[Client,Int])

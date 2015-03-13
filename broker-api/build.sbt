@@ -2,7 +2,7 @@ name := """broker-api"""
 
 organization := "at.segv.play.broker"
 
-version := "1.0.1"
+version := "1.0.3"
 
 scalaVersion := "2.11.1"
 

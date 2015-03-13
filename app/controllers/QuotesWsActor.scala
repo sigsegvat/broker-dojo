@@ -22,8 +22,8 @@ class QuotesWsActor(out: ActorRef) extends Actor {
         val tickJson: JsObject = Json.obj(
           "nr" -> tick.nr,
           "price" -> tick.price,
-          "put" -> tick.put,
-          "call" -> tick.call
+          "putVol" -> tick.putVol,
+          "callVol" -> tick.callVol
         )
 
         val result = Json.obj(

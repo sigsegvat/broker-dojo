@@ -16,7 +16,7 @@ object Global extends GlobalSettings {
     super.onStart(app)
 
     val exchange = Akka.system.actorOf(Props[Exchange],"exchange")
-    Akka.system.scheduler.schedule(Duration(1,TimeUnit.SECONDS), Duration(500,TimeUnit.MILLISECONDS), exchange, 'tickle)
+    Akka.system.scheduler.schedule(Duration(1,TimeUnit.SECONDS), Duration(1000,TimeUnit.MILLISECONDS), exchange, 'tickle)
 
     Logger.info("Exchange: "+exchange)
   }

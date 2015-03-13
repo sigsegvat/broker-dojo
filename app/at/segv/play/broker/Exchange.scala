@@ -3,6 +3,7 @@ package at.segv.play.broker
 import akka.actor.{ActorRef, Actor}
 import akka.event.Logging
 import at.segv.play.broker.api._
+import controllers.ScoreReader
 
 
 class Exchange extends Actor {
@@ -11,14 +12,29 @@ class Exchange extends Actor {
 
   var nr = 0
 
-  var price = 1000000
+  var price: Long = 1000000
 
   var currentCall: Set[Client] = Set()
   var currentPut: Set[Client] = Set()
 
   val scoreMap  = scala.collection.mutable.Map[Client,Int]()
 
-  override def receive: Receive = {
+  val scoreReader: ActorRef = context.actorOf(ScoreReader.props(sender()))
+
+  override def preStart() = {
+    scoreReader ! 'readScores
+
+  }
+
+  override def receive : Receive = {
+    case list: List[Tick] => {
+      nr = list.head.nr
+      price = list.head.price
+      context.become(initialized)
+    }
+  }
+
+  def initialized: Receive = {
 
     case 'tickle => {
       nr += 1

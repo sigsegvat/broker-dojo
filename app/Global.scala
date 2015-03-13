@@ -2,6 +2,8 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.{ActorSystem, Props}
 import at.segv.play.broker.Exchange
+import controllers.ScoreWriter
+import play.api.db.DB
 import play.libs.Akka
 import play.api._
 
@@ -17,6 +19,8 @@ object Global extends GlobalSettings {
 
     val exchange = Akka.system.actorOf(Props[Exchange],"exchange")
     Akka.system.scheduler.schedule(Duration(1,TimeUnit.SECONDS), Duration(1000,TimeUnit.MILLISECONDS), exchange, 'tickle)
+
+    val dbwriter = Akka.system.actorOf(Props[ScoreWriter],"scoreWriter")
 
     Logger.info("Exchange: "+exchange)
   }

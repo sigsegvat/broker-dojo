@@ -27,7 +27,7 @@ class QuotesWsActor(out: ActorRef) extends Actor {
         )
 
         val result = Json.obj(
-          "scores" -> scores.map {case (client:Client, value:Int) => (client.name, value)},
+          "scores" -> scores.map {case (client:String, value:Int) => (client, value)},
           "tick" -> tickJson
         )
 

@@ -17,7 +17,7 @@ class Exchange extends Actor {
   var currentCall: Set[Client] = Set()
   var currentPut: Set[Client] = Set()
 
-  val scoreMap  = scala.collection.mutable.Map[Client,Int]()
+  val scoreMap  = scala.collection.mutable.Map[String,Int]()
 
   val scoreReader: ActorRef = context.actorOf(ScoreReader.props(sender()))
 
@@ -27,10 +27,12 @@ class Exchange extends Actor {
   }
 
   override def receive : Receive = {
-    case list: List[Tick] => {
-      nr = list.head.nr
-      price = list.head.price
+    case s: Scores => {
+      nr = s.tick.nr
+      price = s.tick.price
+      s.scores.foreach( x => scoreMap += x )
       context.become(initialized)
+      log.info("inizialized with "+scoreMap)
     }
   }
 
@@ -40,14 +42,28 @@ class Exchange extends Actor {
       nr += 1
       if (currentCall.size > currentPut.size) {
         price += -1
-        for(winner <- currentPut) scoreMap.put(winner,scoreMap.getOrElse(winner,0)+1)
-        for(looser <- currentCall) scoreMap.put(looser,scoreMap.getOrElse(looser,0))
+        for(winner <- currentPut) {
+          val winnerString: String = winner.actor.toString
+          scoreMap.put(winnerString, scoreMap.getOrElse(winnerString, 0) + 1)
+        }
+        for(looser <- currentCall) {
+          val looserString: String = looser.actor.toString
+          scoreMap.put(looserString, scoreMap.getOrElse(looserString, 0))
+        }
       }
       else if (currentCall.size < currentPut.size){
         price += 1
-        for(winner <- currentCall) scoreMap.put(winner,scoreMap.getOrElse(winner,0)+1)
-        for(looser <- currentPut) scoreMap.put(looser,scoreMap.getOrElse(looser,0))
+        for(winner <- currentCall) {
+          val winnerString: String = winner.actor.toString
+          scoreMap.put(winnerString, scoreMap.getOrElse(winnerString, 0) + 1)
+        }
+        for(looser <- currentPut) {
+          val looserString: String = looser.actor.toString
+          scoreMap.put(looserString, scoreMap.getOrElse(looserString, 0))
+        }
       }
+
+
 
       val tick = Tick(nr, price, currentCall.size, currentPut.size)
 
@@ -59,6 +75,7 @@ class Exchange extends Actor {
       currentPut = Set()
 
       log.info(tick.toString)
+
 
     }
 
@@ -87,4 +104,4 @@ case class Client(actor: ActorRef, name: String)
 
 case class Action[T <: Order](action: T, client: Client)
 
-case class Scores(tick: Tick, scores: Map[Client,Int])
+case class Scores(tick: Tick, scores: Map[String,Int])

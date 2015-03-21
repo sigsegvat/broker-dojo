@@ -18,7 +18,7 @@ class QuotesWsActor(out: ActorRef) extends Actor {
 
   def receive = {
     case Scores(tick,scores) =>
-      if(tick.nr % 5 == 0) {
+      if(tick.nr % 2 == 0) {
         val tickJson: JsObject = Json.obj(
           "nr" -> tick.nr,
           "price" -> tick.price,

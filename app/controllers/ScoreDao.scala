@@ -57,12 +57,10 @@ class ScoreWriter extends Actor with DbCon {
 
   override def receive: Receive = {
     case Scores(tick, scores) => {
-      log.info("writing tick: " + tick)
       db.withSession {
         implicit session =>
           Ticks.ticks += tick
           for ((c, v) <- scores) {
-            log.info("writing score: " + c + " " + v)
             ScoresTab.scores += ((None, c, v, tick.nr))
 
           }

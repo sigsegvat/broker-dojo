@@ -14,10 +14,13 @@ class Exchange extends Actor {
 
   var price: Long = 1000000
 
+
+
   var currentCall: Set[Client] = Set()
   var currentPut: Set[Client] = Set()
 
   val scoreMap  = scala.collection.mutable.Map[String,Int]()
+  var currentClients: Set[String] = Set()
 
   val scoreReader: ActorRef = context.actorOf(ScoreReader.props(sender()))
 
@@ -36,6 +39,8 @@ class Exchange extends Actor {
     }
   }
 
+
+
   def initialized: Receive = {
 
     case 'tickle => {
@@ -43,22 +48,22 @@ class Exchange extends Actor {
       if (currentCall.size > currentPut.size) {
         price += -1
         for(winner <- currentPut) {
-          val winnerString: String = winner.actor.toString
+          val winnerString: String = winner.serialize()
           scoreMap.put(winnerString, scoreMap.getOrElse(winnerString, 0) + 1)
         }
         for(looser <- currentCall) {
-          val looserString: String = looser.actor.toString
+          val looserString: String = looser.serialize()
           scoreMap.put(looserString, scoreMap.getOrElse(looserString, 0))
         }
       }
       else if (currentCall.size < currentPut.size){
         price += 1
         for(winner <- currentCall) {
-          val winnerString: String = winner.actor.toString
+          val winnerString: String = winner.serialize()
           scoreMap.put(winnerString, scoreMap.getOrElse(winnerString, 0) + 1)
         }
         for(looser <- currentPut) {
-          val looserString: String = looser.actor.toString
+          val looserString: String = looser.serialize()
           scoreMap.put(looserString, scoreMap.getOrElse(looserString, 0))
         }
       }
@@ -80,8 +85,15 @@ class Exchange extends Actor {
     }
 
     case r: Register => {
-      context.actorOf(Broker.props(sender(), r.name))
-      log.info("registered " + r)
+      val client: Client = Client(sender(), r.name)
+      if (! (currentClients contains client.serialize())){
+        context.actorOf(Broker.props(client))
+        log.info("registered " + r)
+      }
+      else {
+        log.info("prevented double reg of " + r)
+      }
+
     }
 
     case Action(p: PutOrder, client) => {
@@ -100,7 +112,11 @@ class Exchange extends Actor {
 
 }
 
-case class Client(actor: ActorRef, name: String)
+case class Client(actor: ActorRef, name: String) {
+  def serialize()= {
+    name+"@"+actor.toString()
+  }
+}
 
 case class Action[T <: Order](action: T, client: Client)
 

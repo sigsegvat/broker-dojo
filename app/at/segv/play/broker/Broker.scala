@@ -1,6 +1,6 @@
 package at.segv.play.broker
 
-import akka.actor.{ActorRef, Props, Actor}
+import akka.actor.{PoisonPill, ActorRef, Props, Actor}
 import akka.actor.Actor.Receive
 import akka.event.Logging
 import at.segv.play.broker.api._
@@ -10,23 +10,35 @@ class Broker(client: Client) extends Actor {
 
   val log = Logging(context.system, this)
 
-  override def receive = waitAction
+  var lastAction = 0;
+
+  override def receive = waitTick
 
   override def preStart() = {
     context.system.eventStream.subscribe(self, classOf[Tick])
   }
 
   def processTick(t: Tick): Unit = {
-      client.actor ! t
+    client.actor ! t
+
+    if (t.nr - lastAction > 10) {
+      log.info("died of boredom: "+client)
+      self ! PoisonPill
+    }
+    else {
       context.become(waitAction)
+    }
   }
 
   def waitTick: Receive = {
-    case t: Tick=>  {
+    case t: Tick => {
+      lastAction = t.nr
+      log.info("process: "+lastAction)
       processTick(t)
+
     }
     case _ => {
-      log.info("invalid message from "+client);
+      log.info("invalid message from " + client);
     }
   }
 
@@ -39,12 +51,12 @@ class Broker(client: Client) extends Actor {
       context.parent ! Action(c, client)
       context.become(waitTick)
     }
-    case t: Tick =>  processTick(t)
+    case t: Tick => processTick(t)
   }
 }
 
 object Broker {
-  def props(actor: ActorRef, name: String) = Props(new Broker(new Client(actor, name)))
+  def props(client: Client) = Props(new Broker(client))
 }
 
 
